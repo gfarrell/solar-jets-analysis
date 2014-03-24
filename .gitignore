@@ -2,3 +2,4 @@ lib
 tmp
 .DS_Store
 ._*
+*.sublime-*
