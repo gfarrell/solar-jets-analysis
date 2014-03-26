@@ -10,11 +10,5 @@ FUNCTION SIGFIGS, n, sf
 
     final = rounded * 10.00 ^ (-factor)
 
-    MESSAGE, /INFORMATIONAL, 'Tens = ' + STRTRIM(tens, 2)
-    MESSAGE, /INFORMATIONAL, 'Factor = ' + STRTRIM(factor, 2)
-    MESSAGE, /INFORMATIONAL, 'Reduced = ' + STRTRIM(reduced, 2)
-    MESSAGE, /INFORMATIONAL, 'Rounded = ' + STRTRIM(rounded, 2)
-    MESSAGE, /INFORMATIONAL, 'Final = ' + STRTRIM(final, 2)
-
     RETURN, final
 END
