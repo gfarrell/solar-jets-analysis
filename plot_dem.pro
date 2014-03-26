@@ -60,7 +60,7 @@ PRO PLOT_DEM, FORCE_GEN=regenerate, TEMP_INT=ti, BIN_SIZE=bin_size, BIN_RADIUS=b
     IF ti EQ !NULL THEN BEGIN
         ; default scale from logT=5.6 to logT=7.2
         ; 0.15 interval
-        temps = 10^[5.6,5.75,5.9,6.05,6.20,6.35,6.5,6.65,6.8,6.95,7.1,7.25]
+        temps = 10^[5.6,5.75,5.9,6.05,6.20,6.35,6.5,6.65,6.8,6.95,7.1,7.25,7.4,7.55]
     ENDIF ELSE IF ti EQ 'igh' THEN BEGIN
         temps = [0.5,1,1.5,2,3,4,6,8,11,14,19,25,32]*10^6 ; original to igh
     ENDIF ELSE BEGIN
