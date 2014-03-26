@@ -15,14 +15,16 @@
 ;
 ; OPTIONAL INPUTS:
 ;   FORCE_GEN  flag     forces DEM map regeneration
-;   TEMP_INT   number   the interval between temperatures (x1E6), 'igh' for original
+;   TEMP_INT   number   the interval between temperatures (in log10 space), 'igh' for original
+;   TEMP_LOW   number   the lower bound for the temperature in log10 space
+;   TEMP_HI    number   the upper bound for the temperature in log10 space
 ;   BIN_SIZE   integer  size of the bins in pixels (x = x/bin_size, etc.)
 ;   BIN_RADIUS integer  the radius for DEM averaging (not raw binning)
 ;   X          integer  X pixel coordinate to examine
 ;   Y          integer  Y pixel coordinate to examine
 ;   SAVE       string   what to call the plot
 ;
-PRO PLOT_DEM, FORCE_GEN=regenerate, TEMP_INT=ti, BIN_SIZE=bin_size, BIN_RADIUS=bin_radius, X=x, Y=y, SAVE=save, EVENT=event, _extra=_extra
+PRO PLOT_DEM, FORCE_GEN=regenerate, TEMP_INT=ti, TEMP_LOW=t_low, TEMP_HI=t_hi, BIN_SIZE=bin_size, BIN_RADIUS=bin_radius, X=x, Y=y, SAVE=save, EVENT=event, _extra=_extra
     ;;;;;;;;;;;;;;;;;;;;;
     ;;; CONFIGURATION ;;;
     ;;;;;;;;;;;;;;;;;;;;;
@@ -36,10 +38,6 @@ PRO PLOT_DEM, FORCE_GEN=regenerate, TEMP_INT=ti, BIN_SIZE=bin_size, BIN_RADIUS=b
     ; Plots dir (where any output images will be saved)
     imgDir = 'plots'
 
-    ; Min/Max temp (x1E6)
-    temp_min = 0.1
-    temp_max = 20
-
     ; The minimum window size for image display
     minsize = 512
 
@@ -51,26 +49,23 @@ PRO PLOT_DEM, FORCE_GEN=regenerate, TEMP_INT=ti, BIN_SIZE=bin_size, BIN_RADIUS=b
     ;;;;;;;;;;;;;
 
     ; Set variable defaults
-    IF NOT KEYWORD_SET(regenerate) then regenerate = !NULL
-    IF NOT KEYWORD_SET(bin_size) then bin_size = 1
-    IF NOT KEYWORD_SET(ti) THEN ti = !NULL
+    IF NOT KEYWORD_SET(regenerate)  THEN regenerate = !NULL
+    IF NOT KEYWORD_SET(bin_size)    THEN bin_size   = 1
+    IF NOT KEYWORD_SET(ti)          THEN ti         = 0.15
+    IF NOT KEYWORD_SET(t_low)       THEN t_low      = 5.6
+    IF NOT KEYWORD_SET(t_hi)        THEN t_hi       = 7.55
 
     ; Temperatures along the x-axis
-    ; If no interval chosen, we'll use our default scale
-    IF ti EQ !NULL THEN BEGIN
-        ; default scale from logT=5.6 to logT=7.2
-        ; 0.15 interval
-        temps = 10^[5.6,5.75,5.9,6.05,6.20,6.35,6.5,6.65,6.8,6.95,7.1,7.25,7.4,7.55]
-    ENDIF ELSE IF ti EQ 'igh' THEN BEGIN
+    IF STRTRIM(ti,2) EQ 'igh' THEN BEGIN
         temps = [0.5,1,1.5,2,3,4,6,8,11,14,19,25,32]*10^6 ; original to igh
     ENDIF ELSE BEGIN
-        ; Should be starting at around 0.5M K (0.5x10^6), ending at around 20M K (20x10^6)
-        i = temp_min
-        WHILE i LT temp_max DO BEGIN
-            IF i EQ temp_min THEN temps = [i] ELSE temps = [temps, i]
-            i = i + ti
+        t = t_low
+        temps = [t]
+        WHILE t LE t_hi DO BEGIN
+            t = t + ti
+            temps = [temps, t]
         ENDWHILE
-        temps = temps * 10^6
+        temps = 10^temps
     ENDELSE
     
     ; Load snapshot data
@@ -87,10 +82,12 @@ PRO PLOT_DEM, FORCE_GEN=regenerate, TEMP_INT=ti, BIN_SIZE=bin_size, BIN_RADIUS=b
 
     ; Store original values (that the user has selected)
     ; We'll use this in comparing with the restored data to check if we should regen
-    o_bin_size = bin_size
-    o_ti       = ti
-    o_temps    = temps
-    o_data     = data  ; this is used for image display later
+    o_bin_size  = bin_size
+    o_ti        = ti
+    o_t_low     = t_low
+    o_t_hi      = t_hi
+    o_temps     = temps
+    o_data      = data  ; this is used for image display later
 
     ; If it exists, restore the saved data
     IF FILE_TEST(demFile) THEN BEGIN
@@ -106,9 +103,11 @@ PRO PLOT_DEM, FORCE_GEN=regenerate, TEMP_INT=ti, BIN_SIZE=bin_size, BIN_RADIUS=b
     ENDIF
 
     ; Copy our settings back
-    bin_size = o_bin_size
-    ti       = o_ti
-    temps    = o_temps
+    bin_size    = o_bin_size
+    ti          = o_ti
+    t_low       = o_t_low
+    t_hi        = o_t_hi
+    temps       = o_temps
 
     ; Bin resampling
     IF bin_size NE !NULL AND bin_size GT 1 THEN BEGIN
@@ -143,13 +142,13 @@ PRO PLOT_DEM, FORCE_GEN=regenerate, TEMP_INT=ti, BIN_SIZE=bin_size, BIN_RADIUS=b
         ; DEM stored in dem
         ; vertical error in v_err
         ; horizontal error in h_err
-        cdd, lib, CURRENT=prev_wd
+        cd, lib, CURRENT=prev_wd
         dn2dem_map_pos, data, dem, edem=v_err, elogt=h_err, err_max=1, nbridges=4, temps=temps, /doallpix
-        cdd, prev_wd
+        cd, prev_wd
 
         ; save
         MESSAGE, /INFORMATIONAL, 'Saving dem file in ' + demFile + '.'
-        SAVE, dem, temps, v_err, h_err, bin_size, FILENAME=demFile
+        SAVE, dem, temps, ti, v_err, h_err, bin_size, FILENAME=demFile
     ENDIF
 
     ; log temperature x-axis
@@ -234,8 +233,8 @@ PRO PLOT_DEM, FORCE_GEN=regenerate, TEMP_INT=ti, BIN_SIZE=bin_size, BIN_RADIUS=b
     WINDOW, 0
 
     plot_title = data[2].TIME
-    IF bin_size NE !NULL THEN plot_title = plot_title + ' BIN ' + STRTRIM(bin_size, 2)
-    IF ti NE !NULL THEN plot_title = plot_title + ' TI ' + STRTRIM(ti, 2)
+    IF bin_size NE !NULL THEN plot_title = plot_title + ' BIN ' + STRTRIM(bin_size,2)
+    IF te NE !NULL THEN plot_title = plot_title + ' TEMP INT (LOG) ' + STRTRIM(ti,2)
 
     IF bin_radius NE !NULL THEN BEGIN
         p_dem = AVERAGE(dem[x0:x1,y0:y1,*], [1,2])
