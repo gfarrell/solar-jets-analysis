@@ -16,18 +16,7 @@ PRO COMPARE_DEMS, TITLE=title, CUTOUT=cutout
     i = 0
 
     ; Colours
-    ; 0  black,
-    ; 1  white,
-    ; 2  yellow,
-    ; 3  red,
-    ; 4  green,
-    ; 5  blue,
-    ; 6  orange,
-    ; 7  purple,
-    ; 8  magenta,
-    ; 9  brown, 
-    ; 10 turquoise
-    colours = [0,3,5,7,4,6,8,9,10,2] ; in order of visibility
+    colours = ['red','blue','purple','green','orange','black']
 
     ; Line styles
     ; 0 Solid
