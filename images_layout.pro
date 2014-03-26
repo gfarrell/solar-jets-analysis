@@ -33,6 +33,7 @@ PRO IMAGES_LAYOUT, images, titles=titles, scale=scale, LARGETEXT=large_text, sav
     ; First value is shorter, second is longer
     s = SIZE(images)
     IF KEYWORD_SET(flag_maps) THEN img_count = s[1] ELSE img_count = s[3]
+    MESSAGE, /INFORMATIONAL, 'Finding the right decomposition for ' + STRTRIM(img_count,2) + ' images.'
     layout = FindOptimalDecomposition(img_count)
 
     ; Prefer longer rows by default, but if flag is set, prefer longer cols
@@ -55,13 +56,14 @@ PRO IMAGES_LAYOUT, images, titles=titles, scale=scale, LARGETEXT=large_text, sav
 
     ; Text scaling
     txsz = sz[1]*0.005
-    IF KEYWORD_SET(large_text) THEN txsz = txsz * 3
+    IF KEYWORD_SET(large_text) THEN txsz = txsz * 2
     txth = 1
     IF KEYWORD_SET(large_text) THEN txth = 1.5
 
     ; Create an appropriately sized window
     xsize = (sz[1] * rows)
     ysize = (sz[2] * cols)
+    MESSAGE, /INFORMATIONAL, 'Creating a window for '+STRTRIM(rows,2)+'x'+STRTRIM(cols,2)+' at '+STRTRIM(xsize,2)+' x '+STRTRIM(ysize,2)+' px.'
     WINDOW, 0, XSIZE=xsize, YSIZE=ysize
 
     ; How many titles do we have?
