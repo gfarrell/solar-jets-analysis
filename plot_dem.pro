@@ -14,6 +14,7 @@
 ;   Gideon Farrell <gtf21@cam.ac.uk>
 ;
 ; OPTIONAL INPUTS:
+;   FAINT      flag     relaxes SNR tolerance and forces /doallpix for faint phenomena.
 ;   FORCE_GEN  flag     forces DEM map regeneration
 ;   TEMP_INT   number   the interval between temperatures (in log10 space), 'igh' for original
 ;   TEMP_LOW   number   the lower bound for the temperature in log10 space
@@ -24,7 +25,7 @@
 ;   Y          integer  Y pixel coordinate to examine
 ;   SAVE       string   what to call the plot
 ;
-PRO PLOT_DEM, FORCE_GEN=regenerate, TEMP_INT=ti, TEMP_LOW=t_low, TEMP_HI=t_hi, BIN_SIZE=bin_size, BIN_RADIUS=bin_radius, X=x, Y=y, SAVE=save, EVENT=event, _extra=_extra
+PRO PLOT_DEM, FAINT=faint, FORCE_GEN=regenerate, TEMP_INT=ti, TEMP_LOW=t_low, TEMP_HI=t_hi, BIN_SIZE=bin_size, BIN_RADIUS=bin_radius, X=x, Y=y, SAVE=save, EVENT=event, _extra=_extra
     ;;;;;;;;;;;;;;;;;;;;;
     ;;; CONFIGURATION ;;;
     ;;;;;;;;;;;;;;;;;;;;;
@@ -82,6 +83,7 @@ PRO PLOT_DEM, FORCE_GEN=regenerate, TEMP_INT=ti, TEMP_LOW=t_low, TEMP_HI=t_hi, B
 
     ; Store original values (that the user has selected)
     ; We'll use this in comparing with the restored data to check if we should regen
+    o_faint     = faint
     o_bin_size  = bin_size
     o_ti        = ti
     o_t_low     = t_low
@@ -99,10 +101,12 @@ PRO PLOT_DEM, FORCE_GEN=regenerate, TEMP_INT=ti, TEMP_LOW=t_low, TEMP_HI=t_hi, B
     ; this checks if our data matches our settings
     IF regenerate EQ !NULL THEN BEGIN
         IF o_bin_size NE bin_size THEN regenerate = 1 $
-        ELSE IF NOT ARRAY_EQUAL(o_temps, temps) THEN regenerate = 1
+        ELSE IF NOT ARRAY_EQUAL(o_temps, temps) THEN regenerate = 1 $
+        ELSE IF o_faint NE faint THEN regenerate = 1
     ENDIF
 
     ; Copy our settings back
+    faint       = o_faint
     bin_size    = o_bin_size
     ti          = o_ti
     t_low       = o_t_low
@@ -121,7 +125,7 @@ PRO PLOT_DEM, FORCE_GEN=regenerate, TEMP_INT=ti, TEMP_LOW=t_low, TEMP_HI=t_hi, B
 
         FOR i=0, N_ELEMENTS(data)-1 DO BEGIN
             MESSAGE, /INFORMATIONAL, '- Resampling '+data[i].ID
-            new_data   = FREBIN(data[i].data, rx, ry)
+            new_data   = FREBIN(data[i].data, rx, ry, /TOTAL)
 
             new_map    = rem_tag(data[i], 'DATA')
             new_map    = add_tag(new_map, new_data, 'DATA')
@@ -135,20 +139,26 @@ PRO PLOT_DEM, FORCE_GEN=regenerate, TEMP_INT=ti, TEMP_LOW=t_low, TEMP_HI=t_hi, B
         data = maps
     ENDIF
 
-    IF regenerate NE !NULL THEN BEGIN
-        MESSAGE, /INFORMATIONAL, 'Generating DEMMAP'
-        
+    IF regenerate NE !NULL THEN BEGIN        
         ; generate DEM
         ; DEM stored in dem
         ; vertical error in v_err
         ; horizontal error in h_err
         cd, lib, CURRENT=prev_wd
-        dn2dem_map_pos, data, dem, edem=v_err, elogt=h_err, err_max=1, nbridges=4, temps=temps, /doallpix
+        IF faint NE !NULL THEN BEGIN
+            MESSAGE, /INFORMATIONAL, 'Generating DEMMAP (faint)'
+            dn2dem_map_pos, data, dem, edem=v_err, elogt=h_err, nbridges=4, temps=temps, err_max=1
+            ; if this still doesn't work try /doallpix
+        ENDIF ELSE BEGIN
+            MESSAGE, /INFORMATIONAL, 'Generating DEMMAP'
+            dn2dem_map_pos, data, dem, edem=v_err, elogt=h_err, nbridges=4, temps=temps
+        ENDELSE
+
         cd, prev_wd
 
         ; save
         MESSAGE, /INFORMATIONAL, 'Saving dem file in ' + demFile + '.'
-        SAVE, dem, temps, ti, v_err, h_err, bin_size, FILENAME=demFile
+        SAVE, dem, faint, temps, ti, v_err, h_err, bin_size, FILENAME=demFile
     ENDIF
 
     ; log temperature x-axis
