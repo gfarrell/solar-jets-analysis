@@ -43,24 +43,26 @@ FUNCTION DemLoad, EVENT=event, SEARCH=search, FILE=file, DIR=dataDir, H_ERR=h_er
     ;;;;;;;;;;;;
 
     ; If no event specified, prompt
-    IF event EQ !NULL THEN event = FILE_BASENAME(ChooseFile(eventsDir, /DIR))
+    cE = ChooseFile(eventsDir, /DIR)
+    IF cE NE !NULL THEN BEGIN
+        IF event EQ !NULL THEN event = FILE_BASENAME(cE)
 
-    ; Setup the data directory
-    dataDir = eventsDir + '/' + event + '/' + dataDir
+        ; Setup the data directory
+        dataDir = eventsDir + '/' + event + '/' + dataDir
 
-    IF NOT KEYWORD_SET(search) THEN search = '*.save'
+        IF NOT KEYWORD_SET(search) THEN search = '*.save'
 
-    ; Get the file
-    file = ChooseFile(dataDir, SEARCH=search)
+        ; Get the file
+        file = ChooseFile(dataDir, SEARCH=search)
 
-    ; If the file is null, then return null
-    IF file EQ !NULL THEN BEGIN
-        MESSAGE, /INFORMATIONAL, 'Either no file found or EXIT requested.'
-        RETURN, !NULL
+        If file NE !NULL THEN BEGIN
+            MESSAGE, /INFORMATIONAL, 'Restoring ' + file + '...'
+            RESTORE, file
+
+            RETURN, dem
+        ENDIF
     ENDIF
 
-    MESSAGE, /INFORMATIONAL, 'Restoring ' + file + '...'
-    RESTORE, file
-
-    RETURN, dem
+    MESSAGE, /INFORMATIONAL, 'Either no file found or EXIT requested.'
+    RETURN, !NULL    
 END
