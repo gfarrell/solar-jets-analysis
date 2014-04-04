@@ -8,15 +8,17 @@
 ;   Gideon Farrell <gtf21@cam.ac.uk>
 ;
 ; OPTIONAL INPUTS:
-;   title  (string) plot title
-;   cutout (array)  if specified, all DEMS will be averaged over this pixel area
+;   title    (string) plot title
+;   cutout   (array)  if specified, all DEMS will be averaged over this pixel area
+;   relative (flag)   make peak heights relative to max value
+;   save     (string) postscript file to save result to
 ;
-PRO COMPARE_DEMS, TITLE=title, CUTOUT=cutout
+PRO COMPARE_DEMS, TITLE=title, CUTOUT=cutout, RELATIVE=relative, SAVE=save
     ; Set iteration counter so we know which plot routine to use
     i = 0
 
     ; Colours
-    colours = ['red','blue','purple','green','orange','black']
+    colours = ['red','blue','green','orange','purple','black']
 
     ; Line styles
     ; 0 Solid
@@ -30,13 +32,15 @@ PRO COMPARE_DEMS, TITLE=title, CUTOUT=cutout
     ; If no title is set, make it "DEM Comparison"
     IF NOT KEYWORD_SET(title) THEN title = 'DEM Comparison'
 
+    IF KEYWORD_SET(save) THEN PS, save
+
     ; Keep asking for DEMs
     ; Ask for the cutout area (leave blank to use previous) if not specified
     ; Ask for a title for the DEM
     ; Load DEM, plot it
     WHILE 1 DO BEGIN
         ; First load DEM
-        dem = DEMLoad(EVENT=event, TEMPS=temps, H_ERR=herr, V_ERR=verr)
+        dem = DEMLoad(TEMPS=temps, H_ERR=herr, V_ERR=verr)
 
         ; Break if user requests exit from loop
         IF dem EQ !NULL THEN BREAK
@@ -58,6 +62,19 @@ PRO COMPARE_DEMS, TITLE=title, CUTOUT=cutout
         xerr = AVERAGE(herr[c[0]:c[1], c[2]:c[3], *], [1,2])
         yerr = AVERAGE(verr[c[0]:c[1], c[2]:c[3], *], [1,2])
 
+        ; If we're doing relative strength, attenuate
+        ; ie make everything a %age of max DEM value.
+        ; we do this for data because we want relatives w/i the average
+        IF KEYWORD_SET(relative) THEN BEGIN
+            d_max = MAX(data)
+            data = data / d_max * 100
+            yerr = yerr / d_max * 100
+
+            MESSAGE, /INFORMATIONAL, 'DEM Maximum: '+STRTRIM(d_max,2)
+            MESSAGE, /INFORMATIONAL, 'New data max: '+STRTRIM(MAX(data),2)
+            MESSAGE, /INFORMATIONAL, 'New yerr max: '+STRTRIM(MAX(yerr),2)
+        ENDIF
+
         ; Styling
         colour = colours[i MOD (N_ELEMENTS(colours) - 1)]
         line = lines[i MOD (N_ELEMENTS(lines) - 1)]
@@ -72,15 +89,20 @@ PRO COMPARE_DEMS, TITLE=title, CUTOUT=cutout
 
         ; Plot
         IF i EQ 0 THEN BEGIN
-            PLOTERROR, xaxis, data, xerr, yerr, TITLE=title, LINESTYLE=line, xtitle='Log10 of temperature', ytitle='dn', /NOHAT, THICK=1.5, ERRCOL=colour, COLOR=colour
+            IF KEYWORD_SET(relative) THEN yt = 'relative strength' ELSE yt = 'dn'
+            PLOTERROR, xaxis, data, xerr, yerr, TITLE=title, LINESTYLE=0, xtitle='Log10 of temperature', ytitle=yt, /NOHAT, THICK=1.5, ERRCOL=colour, COLOR=colour, YRANGE=[0, MAX(data)*1.05]
         ENDIF ELSE BEGIN
-            OPLOTERROR, xaxis, data, xerr, yerr, /NOHAT, THICK=1.5, ERRCOL=colour, COLOR=colour, LINESTYLE=line
+            OPLOTERROR, xaxis, data, xerr, yerr, /NOHAT, THICK=1.5, ERRCOL=colour, COLOR=colour, LINESTYLE=0
         ENDELSE
 
         ; Iterate
         i = i + 1
     ENDWHILE
 
+    reord = SORT(l_names)
+
     ; Draw legend
-    AL_LEGEND, l_names, colors=l_colours, linestyle=l_lines, /top_legend, /right_legend, /clear
+    AL_LEGEND, l_names[reord], colors=l_colours[reord], linestyle=0, /top_legend, /right_legend, /clear, CHARSIZE=1.5
+
+    IF KEYWORD_SET(save) THEN PSCLOSE
 END
