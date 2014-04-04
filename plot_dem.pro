@@ -55,6 +55,7 @@ PRO PLOT_DEM, FAINT=faint, FORCE_GEN=regenerate, TEMP_INT=ti, TEMP_LOW=t_low, TE
     IF NOT KEYWORD_SET(ti)          THEN ti         = 0.15
     IF NOT KEYWORD_SET(t_low)       THEN t_low      = 5.6
     IF NOT KEYWORD_SET(t_hi)        THEN t_hi       = 7.55
+    IF NOT KEYWORD_SET(faint)       THEN faint      = 0
 
     ; Temperatures along the x-axis
     IF STRTRIM(ti,2) EQ 'igh' THEN BEGIN
@@ -145,7 +146,7 @@ PRO PLOT_DEM, FAINT=faint, FORCE_GEN=regenerate, TEMP_INT=ti, TEMP_LOW=t_low, TE
         ; vertical error in v_err
         ; horizontal error in h_err
         cd, lib, CURRENT=prev_wd
-        IF faint NE !NULL THEN BEGIN
+        IF faint THEN BEGIN
             MESSAGE, /INFORMATIONAL, 'Generating DEMMAP (faint)'
             dn2dem_map_pos, data, dem, edem=v_err, elogt=h_err, nbridges=4, temps=temps, err_max=1
             ; if this still doesn't work try /doallpix
