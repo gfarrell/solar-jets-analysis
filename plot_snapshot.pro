@@ -2,7 +2,7 @@ PRO PLOT_SNAPSHOT, REBIN=r
     LOADCT,3
 
     data = DLOAD()
-    d = data[2]
+    d = data[3] ; 193 is clearest
 
     IF KEYWORD_SET(r) THEN BEGIN
         sz = SIZE(d.DATA)
@@ -20,6 +20,6 @@ PRO PLOT_SNAPSHOT, REBIN=r
         d = new_map
     END
 
-    MESSAGE, /INFORMATIONAL, 'Plotting 171Å...'
+    MESSAGE, /INFORMATIONAL, 'Plotting 193Å...'
     PLOT_IMAGE, d.DATA
 END
