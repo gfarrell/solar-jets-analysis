@@ -1,4 +1,4 @@
-PRO PLOT_AREAS_ON_SNAPSHOT, SCALE=scale
+PRO PLOT_AREAS_ON_SNAPSHOT, SCALE=scale, COLOUR=col
     s = DLOAD()
 
     IF s EQ !NULL THEN RETURN
@@ -6,7 +6,8 @@ PRO PLOT_AREAS_ON_SNAPSHOT, SCALE=scale
     img = s[2].DATA
     sz = SIZE(img)
 
-    IF NOT KEYWORD_SET(scale) THEN SCALE = 8
+    IF NOT KEYWORD_SET(scale) THEN scale = 8.0
+    IF NOT KEYWORD_SET(col)   THEN col   = 'FFF'x
 
     w = sz[1]*scale
     h = sz[2]*scale
@@ -15,8 +16,7 @@ PRO PLOT_AREAS_ON_SNAPSHOT, SCALE=scale
 
     EXPAND_TV, img, w, h, 0, 0
 
-    thickness = 1
-    col = 'FFF'x
+    thickness = 1.0 + (scale / 6.0)
 
     ; Draw Arrows
     WHILE 1 DO BEGIN
