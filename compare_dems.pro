@@ -89,7 +89,7 @@ PRO COMPARE_DEMS, TITLE=title, CUTOUT=cutout, RELATIVE=relative, SAVE=save
 
         ; Plot
         IF i EQ 0 THEN BEGIN
-            IF KEYWORD_SET(relative) THEN yt = 'relative strength' ELSE yt = 'dn'
+            IF KEYWORD_SET(relative) THEN yt = 'relative strength' ELSE yt = 'dn px^-2'
             PLOTERROR, xaxis, data, xerr, yerr, TITLE=title, LINESTYLE=0, xtitle='Log10 of temperature', ytitle=yt, /NOHAT, THICK=1.5, ERRCOL=colour, COLOR=colour, YRANGE=[0, MAX(data)*1.05]
         ENDIF ELSE BEGIN
             OPLOTERROR, xaxis, data, xerr, yerr, /NOHAT, THICK=1.5, ERRCOL=colour, COLOR=colour, LINESTYLE=0
