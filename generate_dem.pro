@@ -1,13 +1,11 @@
 ; NAME:
-;   PLOT_DEM
+;   GENERATE_DEM
 ;
 ; PURPOSE:
-;   Plots a dem map for a snapshot of a particular event.
-;   This can do a couple of interesting things:
-;       - resamples original images PRE DEM creation
-;       - averages over spatial area within DEM (otherwise choosing pixels can be a tad hit-and-miss)
-;       - plots a graph of the temperature at a particular point/area
-;       - saves composite images showing the area/point and the corresponding graph
+;   Generates DEM emissions.
+;   Resamples using FREBIN before computation.
+;   Uses IGH's DEMMAP library to generate DEM.
+;
 ;   For speed the procedure caches the last parameters (auto-detects change)
 ;
 ; AUTHOR:
@@ -23,9 +21,9 @@
 ;   BIN_RADIUS integer  the radius for DEM averaging (not raw binning)
 ;   X          integer  X pixel coordinate to examine
 ;   Y          integer  Y pixel coordinate to examine
-;   SAVE       string   what to call the plot
+;   SAVE       string   save the DEM parameters and results in a non-standard file
 ;
-PRO PLOT_DEM, FAINT=faint, FORCE_GEN=regenerate, TEMP_INT=ti, TEMP_LOW=t_low, TEMP_HI=t_hi, BIN_SIZE=bin_size, BIN_RADIUS=bin_radius, X=x, Y=y, SAVE=save, EVENT=event, _extra=_extra
+PRO GENERATE_DEM, FAINT=faint, FORCE_GEN=regenerate, TEMP_INT=ti, TEMP_LOW=t_low, TEMP_HI=t_hi, BIN_SIZE=bin_size, BIN_RADIUS=bin_radius, X=x, Y=y, SAVE=save, EVENT=event, _extra=_extra
     ;;;;;;;;;;;;;;;;;;;;;
     ;;; CONFIGURATION ;;;
     ;;;;;;;;;;;;;;;;;;;;;
@@ -80,7 +78,8 @@ PRO PLOT_DEM, FAINT=faint, FORCE_GEN=regenerate, TEMP_INT=ti, TEMP_LOW=t_low, TE
     ; Check to see if we've already generated DEM map
     demDir = eventsDir + '/' + event + '/' + demDir
     IF NOT FILE_TEST(demDir) THEN FILE_MKDIR, demDir
-    demFile = demDir + '/' + FILE_BASENAME(file)
+    IF NOT KEYWORD_SET(save) THEN save = FILE_BASENAME(file)
+    demFile = demDir + '/' + save
 
     ; Store original values (that the user has selected)
     ; We'll use this in comparing with the restored data to check if we should regen
@@ -160,128 +159,5 @@ PRO PLOT_DEM, FAINT=faint, FORCE_GEN=regenerate, TEMP_INT=ti, TEMP_LOW=t_low, TE
         ; save
         MESSAGE, /INFORMATIONAL, 'Saving dem file in ' + demFile + '.'
         SAVE, dem, faint, temps, ti, v_err, h_err, bin_size, FILENAME=demFile
-    ENDIF
-
-    ; log temperature x-axis
-    logT0=get_edges(alog10(temps),/mean)
-
-    ;;;;;;;;;;;;;;;;;;
-    ;;; PROCESSING ;;;
-    ;;;;;;;;;;;;;;;;;;
-
-    IF x EQ !NULL OR y EQ !NULL THEN BEGIN
-        MESSAGE, /INFORMATIONAL, 'Displaying 171Å'
-        LOADCT, 3
-        PLOT_IMAGE, data[2].DATA
-
-        ; ask the user for X,Y coordinates to plot
-        READ, x, PROMPT='Enter X coordinate (px): '
-        READ, y, PROMPT='Enter Y coordinate (px): '
-    ENDIF
-
-    ; Now let's draw the image in its own window
-    ; min window size should be 256
-    ; NB using original data, not resampled, for display quality
-    sz = SIZE(o_data[2].DATA)
-    IF sz[1] LT sz[2] THEN win_scale = minsize/sz[1] ELSE win_scale = minsize/sz[2]
-    
-    win_x = win_scale * sz[1]
-    win_y = win_scale * sz[2]
-
-    IF bin_size NE !NULL THEN BEGIN
-        pl_x = x * bin_size
-        pl_y = y * bin_size
-    ENDIF ELSE BEGIN
-        pl_x = x
-        pl_y = y
-    ENDELSE
-    pl_x = pl_x * win_scale
-    pl_y = pl_y * win_scale
-
-    ; Display the image
-    WINDOW, 1, XSIZE=win_x, YSIZE=win_y
-    EXPAND_TV, o_data[2].DATA, win_x, win_y, 0, 0
-    
-    ; Calculating DEM average binning in case it's desired
-    IF bin_radius NE !NULL THEN BEGIN
-        x0 = x - bin_radius
-        x1 = x + bin_radius
-        y0 = y - bin_radius
-        y1 = y + bin_radius
-
-        IF bin_size NE !NULL THEN BEGIN
-            pl_x0 = x0 * bin_size
-            pl_x1 = x1 * bin_size
-            pl_y0 = y0 * bin_size
-            pl_y1 = y1 * bin_size
-        ENDIF
-
-        pl_x0 = pl_x0 * win_scale
-        pl_x1 = pl_x1 * win_scale
-        pl_y0 = pl_y0 * win_scale
-        pl_y1 = pl_y1 * win_scale
-
-        ; point to our plotting location as a box
-        ; x-axis
-        ARROW, pl_x0, 0, pl_x0, win_y, hthick=0, hsize=0, thick=1, color=aCol
-        ARROW, pl_x1, 0, pl_x1, win_y, hthick=0, hsize=0, thick=1, color=aCol
-        ; y-axis
-        ARROW, 0, pl_y0, win_x, pl_y0, hthick=0, hsize=0, thick=1, color=aCol
-        ARROW, 0, pl_y1, win_x, pl_y1, hthick=0, hsize=0, thick=1, color=aCol
-    ENDIF ELSE BEGIN
-        ; point to our plotting location
-        ; x-axis
-        ARROW, pl_x, 0, pl_x, win_y, hthick=0, hsize=0, thick=1, color=aCol
-        ; y-axis
-        ARROW, 0, pl_y, win_x, pl_y, hthick=0, hsize=0, thick=1, color=aCol
-    ENDELSE
-    
-    ; get the data
-    TVLCT, R, G, B, /GET
-    visual_location_image = TVRD()
-
-    MESSAGE, /INFORMATIONAL, 'Plotting (finally...)'
-    WINDOW, 0
-
-    plot_title = data[2].TIME
-    IF bin_size NE !NULL THEN plot_title = plot_title + ' BIN ' + STRTRIM(bin_size,2)
-    IF te NE !NULL THEN plot_title = plot_title + ' TEMP INT (LOG) ' + STRTRIM(ti,2)
-
-    IF bin_radius NE !NULL THEN BEGIN
-        p_dem = AVERAGE(dem[x0:x1,y0:y1,*], [1,2])
-        x_err = AVERAGE(h_err[x0:x1,y0:y1,*], [1,2])
-        y_err = AVERAGE(v_err[x0:x1,y0:y1,*], [1,2])
-    ENDIF ELSE BEGIN
-        p_dem = dem[x,y,*]
-        x_err = h_err[x,y,*]
-        y_err = v_err[x,y,*]
-    ENDELSE
-
-    PLOTERR, logT0, p_dem, x_err, y_err, TITLE=plot_title, xtitle='Log10 of temperature', ytitle='DEM', /NOHAT, THICK=2, ERRCOL='00FF00'x, _extra=_extra
-
-    graph_image_data = TVRD()
-
-    ; If requested, save
-    IF save NE !NULL THEN BEGIN
-        MESSAGE, /INFORMATIONAL, 'Saving images...'
-
-        imgFile = imgDir + '/' + save + '_loc.png'
-        pltFile = imgDir + '/' + save + '_graph.png'
-        cmpFile = imgDir + '/' + save + '_composite.png'
-
-        iSize = SIZE(visual_location_image)
-        pSize = SIZE(graph_image_data)
-
-        ; Now to write the composite image
-        ; rescale loc to fit graph height
-        lH = pSize[2]
-        lW = iSize[1] * lH/iSize[2]
-        WINDOW, 0, XSIZE=(lW+pSize[1]), YSIZE=lH
-        EXPAND_TV, visual_location_image, lW, lH, 0, 0
-        EXPAND_TV, graph_image_data, pSize[1], pSize[2], lW, 0
-
-        WRITE_PNG, imgFile, visual_location_image, R, G, B
-        WRITE_PNG, pltFile, graph_image_data
-        WRITE_PNG, cmpFile, TVRD(), R, G, B
     ENDIF
 END
