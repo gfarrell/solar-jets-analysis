@@ -20,7 +20,7 @@
 ;   BIN_SIZE   integer  size of the bins in pixels (x = x/bin_size, etc.)
 ;   SAVE       string   save the DEM parameters and results in a non-standard file
 ;
-PRO GENERATE_DEM, FAINT=faint, FORCE_GEN=regenerate, TEMP_INT=ti, TEMP_LOW=t_low, TEMP_HI=t_hi, BIN_SIZE=bin_size, BIN_RADIUS=bin_radius, X=x, Y=y, SAVE=save, EVENT=event, _extra=_extra
+PRO GENERATE_DEM, FAINT=faint, FORCE_GEN=regenerate, TEMP_INT=ti, TEMP_LOW=t_low, TEMP_HI=t_hi, BIN_SIZE=bin_size, SAVE=save, EVENT=event, _extra=_extra
     ;;;;;;;;;;;;;;;;;;;;;
     ;;; CONFIGURATION ;;;
     ;;;;;;;;;;;;;;;;;;;;;
