@@ -18,9 +18,6 @@
 ;   TEMP_LOW   number   the lower bound for the temperature in log10 space
 ;   TEMP_HI    number   the upper bound for the temperature in log10 space
 ;   BIN_SIZE   integer  size of the bins in pixels (x = x/bin_size, etc.)
-;   BIN_RADIUS integer  the radius for DEM averaging (not raw binning)
-;   X          integer  X pixel coordinate to examine
-;   Y          integer  Y pixel coordinate to examine
 ;   SAVE       string   save the DEM parameters and results in a non-standard file
 ;
 PRO GENERATE_DEM, FAINT=faint, FORCE_GEN=regenerate, TEMP_INT=ti, TEMP_LOW=t_low, TEMP_HI=t_hi, BIN_SIZE=bin_size, BIN_RADIUS=bin_radius, X=x, Y=y, SAVE=save, EVENT=event, _extra=_extra
