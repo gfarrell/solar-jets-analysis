@@ -257,7 +257,7 @@ PRO PLOT_DEM, FAINT=faint, FORCE_GEN=regenerate, TEMP_INT=ti, TEMP_LOW=t_low, TE
         y_err = v_err[x,y,*]
     ENDELSE
 
-    PLOTERR, logT0, p_dem, x_err, y_err, TITLE=plot_title, xtitle='Log10 of temperature', ytitle='counts', /NOHAT, THICK=2, ERRCOL='00FF00'x, _extra=_extra
+    PLOTERR, logT0, p_dem, x_err, y_err, TITLE=plot_title, xtitle='Log10 of temperature', ytitle='DEM', /NOHAT, THICK=2, ERRCOL='00FF00'x, _extra=_extra
 
     graph_image_data = TVRD()
 
