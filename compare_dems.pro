@@ -29,8 +29,11 @@ PRO COMPARE_DEMS, TITLE=title, CUTOUT=cutout, RELATIVE=relative, SAVE=save
     ; 5 Long Dashes
     lines = [0,2,3,4,5,1] ; visibility order
 
-    ; If no title is set, make it "DEM Comparison"
-    IF NOT KEYWORD_SET(title) THEN title = 'DEM Comparison'
+    ; Charsize to use
+    charsize = 2
+
+    ; If no title is set, make it blank
+    IF NOT KEYWORD_SET(title) THEN title = ''
 
     IF KEYWORD_SET(save) THEN PS, save
 
@@ -89,8 +92,9 @@ PRO COMPARE_DEMS, TITLE=title, CUTOUT=cutout, RELATIVE=relative, SAVE=save
 
         ; Plot
         IF i EQ 0 THEN BEGIN
-            IF KEYWORD_SET(relative) THEN yt = 'relative strength' ELSE yt = 'dn px^-2'
-            PLOTERROR, xaxis, data, xerr, yerr, TITLE=title, LINESTYLE=0, xtitle='Log10 of temperature', ytitle=yt, /NOHAT, THICK=1.5, ERRCOL=colour, COLOR=colour, YRANGE=[0, MAX(data)*1.05]
+            IF KEYWORD_SET(relative) THEN yt = 'relative strength' ELSE yt = 'DEM [cm^-5 K^-1]'
+            
+            PLOTERROR, xaxis, data, xerr, yerr, TITLE=title, xtitle='Log10 of temperature [K]', ytitle=yt, /NOHAT, THICK=1.5, LINESTYLE=0,  ERRCOL=colour, COLOR=colour, CHARSIZE=charsize, YRANGE=[0, MAX(data)*1.05]
         ENDIF ELSE BEGIN
             OPLOTERROR, xaxis, data, xerr, yerr, /NOHAT, THICK=1.5, ERRCOL=colour, COLOR=colour, LINESTYLE=0
         ENDELSE
@@ -102,7 +106,7 @@ PRO COMPARE_DEMS, TITLE=title, CUTOUT=cutout, RELATIVE=relative, SAVE=save
     reord = SORT(l_names)
 
     ; Draw legend
-    AL_LEGEND, l_names[reord], colors=l_colours[reord], linestyle=0, /top_legend, /right_legend, /clear, CHARSIZE=1.5
+    AL_LEGEND, l_names[reord], colors=l_colours[reord], LINESTYLE=0, /TOP_LEGEND, /RIGHT_LEGEND, /CLEAR, CHARSIZE=charsize, LINSIZE=0.3
 
     IF KEYWORD_SET(save) THEN PSCLOSE
 END
