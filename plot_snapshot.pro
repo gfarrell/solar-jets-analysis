@@ -1,6 +1,4 @@
 PRO PLOT_SNAPSHOT, REBIN=r
-    LOADCT,3
-
     data = DLOAD()
     d = data[3] ; 193 is clearest
 
