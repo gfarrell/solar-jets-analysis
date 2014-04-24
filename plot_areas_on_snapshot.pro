@@ -3,7 +3,7 @@ PRO PLOT_AREAS_ON_SNAPSHOT, SCALE=scale, COLOUR=col
 
     IF s EQ !NULL THEN RETURN
 
-    img = s[2].DATA
+    img = s[3].DATA ; 193 is clearest
     sz = SIZE(img)
 
     IF NOT KEYWORD_SET(scale) THEN scale = 8.0
