@@ -13,26 +13,20 @@
 ; CALLS:
 ;   ChooseFile, DLoad, UTPLOT, OUTPLOT, AL_LEGEND
 ;
-; INPUTS:
-;   event   (string) the specific event to look at
-;   x_range (array)  pixel boundaries along the x-axis e.g. [1, 50]
-;   y_range (array)  pixel boundaries along the y-axis e.g. [250, 450]
-;
 ; OPTIONAL INPUTS:
-;   search  (string) a glob filter to narrow down available maps
-;   save    (string) if set, will save a postscript file to the specified filename
-;   filters (array)  array of filters in order that you would like plotted, non-interactive
+;   cutout   (array)  the pixel box to average over
+;   relative (flag)   if set, normalises intensities to 100
+;   search   (string) a glob filter to narrow down available maps
+;   save     (string) if set, will save a postscript file to the specified filename
+;   filters  (array)  array of filters in order that you would like plotted, non-interactive
 ; 
-PRO Lightcurve, event, x_range, y_range, title=title, SEARCH=search, SAVE=save, FILTERS=filters
+PRO Lightcurve, CUTOUT=cutout, title=title, SEARCH=search, SAVE=save, FILTERS=filters, RELATIVE=relative
     ;;;;;;;;;;;;;;;;;;;;;
     ;;; CONFIGURATION ;;;
     ;;;;;;;;;;;;;;;;;;;;;
 
     ; events location
     CONFIGURATOR, DATA_DIR=eventsDir
-    
-    ; save file location
-    saveDir = 'plots'
 
     ; Colours
     ; 0  black,
@@ -52,28 +46,25 @@ PRO Lightcurve, event, x_range, y_range, title=title, SEARCH=search, SAVE=save, 
     ; Colours specific to wavelength
     colours = HASH(94, 10, 131, 3, 171, 4, 193, 5, 211, 6, 304, 7, 335, 8)
 
+    ; character sizing
+    charsize = 2
+
     ;;;;;;;;;;;;;
     ;;; SETUP ;;;
     ;;;;;;;;;;;;;
 
-    ; Dirs
-    rootDir = eventsDir + '/' + event
-    saveDir = rootDir + '/' + saveDir
-
-    ; Validate
-    IF x_range[0] GT x_range[1] THEN $
-        x_range = REVERSE(x_range)
-    IF y_range[0] GT y_range[1] THEN $
-        y_range = REVERSE(y_range)
+    ; Ask for cutout area
+    IF NOT KEYWORD_SET(cutout) THEN BEGIN
+        c = [0,0,0,0]
+        READ, c, PROMPT='Please specify a cutout area (x0,x1,y0,y1): '
+    ENDIF ELSE c = cutout
 
     ; Create x/y variables
-    x0 = x_range[0]
-    x1 = x_range[1]
-    y0 = y_range[0]
-    y1 = y_range[1]
+    x0 = c[0]
+    x1 = c[1]
+    y0 = c[2]
+    y1 = c[3]
 
-    ; Default title is event name
-    IF NOT KEYWORD_SET(title) THEN title = event
 
     ;;;;;;;;;;;;;;;;;;
     ;;; Processing ;;;
@@ -81,8 +72,7 @@ PRO Lightcurve, event, x_range, y_range, title=title, SEARCH=search, SAVE=save, 
 
     ; If save is specified, then open a PS file
     IF KEYWORD_SET(save) THEN BEGIN
-        IF NOT FILE_EXIST(saveDir) THEN FILE_MKDIR, saveDir
-        PS, saveDir + '/' + save, /LAND, /COLOR
+        PS, save, /LAND, /COLOR
     ENDIF
 
     ; Keep offering to process until user requests exit
@@ -113,6 +103,12 @@ PRO Lightcurve, event, x_range, y_range, title=title, SEARCH=search, SAVE=save, 
         ; Check that we were successful, otherwise exit the loop
         IF arrMap EQ !NULL THEN BREAK
 
+        ; Default title is event name
+        IF NOT KEYWORD_SET(title) THEN title = event
+        ; axes etc.
+        xt = 'time (HH:MM)'
+        IF KEYWORD_SET(relative) THEN yt = 'relative strength' ELSE yt = 'dn / s'
+
         ; Get legend data
         ; Get the date
         dates = STREGEX(arrMap.time, '([0-9A-Za-z\-]+)', /EXTRACT)
@@ -124,10 +120,15 @@ PRO Lightcurve, event, x_range, y_range, title=title, SEARCH=search, SAVE=save, 
         ; Colour for the wavelength
         colour = colours[FIX(f_name)]
 
-        ; If this is the first one, use UTPLOT, otherwise OUTPLOT
+        ; average data
         data = AVERAGE(arrMap.data[x0:x1, y0:y1], [1, 2])
+
+        ; if RELATIVE is set, normalise
+        IF KEYWORD_SET(relative) THEN data = (data / MAX(data)) * 100
+
+        ; If this is the first one, use UTPLOT, otherwise OUTPLOT
         IF i EQ 0 THEN BEGIN
-            UTPLOT, arrMap.time, data, color=colour, title=title, xtitle='time (HH:MM)', ytitle='dn / s'
+            UTPLOT, arrMap.time, data, color=colour, title=title, xtitle=xt, ytitle=yt, CHARSIZE=charsize
         ENDIF ELSE BEGIN
             OUTPLOT, arrMap.time, data, COLOR=colour
         ENDELSE
@@ -143,7 +144,7 @@ PRO Lightcurve, event, x_range, y_range, title=title, SEARCH=search, SAVE=save, 
     ; Draw the legend
     ; We want to order the filters in numerical order, otherwise it's ugly
     REORD = SORT(filters)
-    AL_LEGEND, legend_items[REORD], colors=legend_colours[REORD], linestyle=0, /top_legend, /right_legend, /clear
+    AL_LEGEND, legend_items[REORD], COLORS=legend_colours[REORD], LINESTYLE=0, /BOTTOM_LEGEND, /RIGHT_LEGEND, /CLEAR, CHARSIZE=charsize, LINSIZE=0.3
 
     ; Close the PS file if created
     IF KEYWORD_SET(save) THEN BEGIN
