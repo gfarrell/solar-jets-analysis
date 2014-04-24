@@ -144,7 +144,13 @@ PRO Lightcurve, CUTOUT=cutout, title=title, SEARCH=search, SAVE=save, FILTERS=fi
     ; Draw the legend
     ; We want to order the filters in numerical order, otherwise it's ugly
     REORD = SORT(filters)
-    AL_LEGEND, legend_items[REORD], COLORS=legend_colours[REORD], LINESTYLE=0, /BOTTOM_LEGEND, /RIGHT_LEGEND, /CLEAR, CHARSIZE=charsize, LINSIZE=0.3
+    ; We want a top legend normally, but a bottom legend for relative lines
+    ; tried doing this using variables (DRYer) but it wouldn't work
+    IF KEYWORD_SET(relative) THEN BEGIN
+        AL_LEGEND, legend_items[REORD], COLORS=legend_colours[REORD], LINESTYLE=0, /BOTTOM_LEGEND, /RIGHT_LEGEND, /CLEAR, CHARSIZE=0.65*charsize, LINSIZE=0.3
+    ENDIF ELSE BEGIN
+        AL_LEGEND, legend_items[REORD], COLORS=legend_colours[REORD], LINESTYLE=0, /TOP_LEGEND, /RIGHT_LEGEND, /CLEAR, CHARSIZE=0.65*charsize, LINSIZE=0.3
+    ENDELSE
 
     ; Close the PS file if created
     IF KEYWORD_SET(save) THEN BEGIN
