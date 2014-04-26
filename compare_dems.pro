@@ -32,6 +32,9 @@ PRO COMPARE_DEMS, TITLE=title, CUTOUT=cutout, RELATIVE=relative, SAVE=save
     ; Charsize to use
     charsize = 2
 
+    ; Thickness to use
+    thick = 2
+
     ; If no title is set, make it blank
     IF NOT KEYWORD_SET(title) THEN title = ''
 
@@ -94,7 +97,7 @@ PRO COMPARE_DEMS, TITLE=title, CUTOUT=cutout, RELATIVE=relative, SAVE=save
         IF i EQ 0 THEN BEGIN
             IF KEYWORD_SET(relative) THEN yt = 'relative strength' ELSE yt = 'DEM [cm^-5 K^-1]'
             
-            PLOTERROR, xaxis, data, xerr, yerr, TITLE=title, xtitle='Log10 of temperature [K]', ytitle=yt, /NOHAT, THICK=1.5, LINESTYLE=0,  ERRCOL=colour, COLOR=colour, CHARSIZE=charsize, YRANGE=[0, MAX(data)*1.05]
+            PLOTERROR, xaxis, data, xerr, yerr, TITLE=title, xtitle='Log10 of temperature [K]', ytitle=yt, /NOHAT, THICK=thick, CHARTHICK=thick, LINESTYLE=0,  ERRCOL=colour, COLOR=colour, CHARSIZE=charsize, YRANGE=[0, MAX(data)*1.05]
         ENDIF ELSE BEGIN
             OPLOTERROR, xaxis, data, xerr, yerr, /NOHAT, THICK=1.5, ERRCOL=colour, COLOR=colour, LINESTYLE=0
         ENDELSE
@@ -106,7 +109,7 @@ PRO COMPARE_DEMS, TITLE=title, CUTOUT=cutout, RELATIVE=relative, SAVE=save
     reord = SORT(l_names)
 
     ; Draw legend
-    AL_LEGEND, l_names[reord], colors=l_colours[reord], LINESTYLE=0, /TOP_LEGEND, /RIGHT_LEGEND, /CLEAR, CHARSIZE=charsize, LINSIZE=0.3
+    AL_LEGEND, l_names[reord], colors=l_colours[reord], LINESTYLE=0, /TOP_LEGEND, /RIGHT_LEGEND, /CLEAR, CHARSIZE=charsize, LINSIZE=0.3, CHARTHICK=thick
 
     IF KEYWORD_SET(save) THEN PSCLOSE
 END
