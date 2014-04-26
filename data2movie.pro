@@ -11,13 +11,10 @@
 ;   NONE
 ;
 ; OPTIONAL INPUTS:
-;   colmap (number) the colour map to use, default: 3 (red)
 ;   anything that DLoad, MOVIE_MAP, take as well.
 ;
-PRO DATA2MOVIE, COLMAP=colmap, _extra=extra, CUTOUT=cutout
+PRO DATA2MOVIE, _extra=extra, CUTOUT=cutout
     CONFIGURATOR, DATA_DIR=eventsDir
-
-    IF NOT KEYWORD_SET(colmap) THEN colmap = 3
 
     arrMap = DLoad(_extra=extra)
 
@@ -30,6 +27,5 @@ PRO DATA2MOVIE, COLMAP=colmap, _extra=extra, CUTOUT=cutout
     ENDIF
 
     ; Convert arrMap into a movie
-    LOADCT, COLMAP
     MOVIE_MAP, arrMap, _extra=extra
 END
